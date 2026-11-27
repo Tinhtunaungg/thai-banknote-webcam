@@ -1,0 +1,7 @@
+{
+  "s_min": 0,
+  "v_min": 143,
+  "v_max": 236,
+  "open_iterations": 2,
+  "close_iterations": 5
+}
