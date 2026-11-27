@@ -7,10 +7,10 @@ from unittest.mock import patch
 import cv2
 import numpy as np
 
-from autocalibration import (GuidedCalibration, choose_settings, guide_box,
+from thai_banknote.autocalibration import (GuidedCalibration, choose_settings, guide_box,
                              load_settings, mask_quality, save_settings)
-from segmentation import DEFAULT_SETTINGS, segment_banknote
-from preprocessing import camera_warning
+from thai_banknote.segmentation import DEFAULT_SETTINGS, segment_banknote
+from thai_banknote.preprocessing import camera_warning
 
 
 def guided_frame():
@@ -52,7 +52,7 @@ class AutoCalibrationTests(unittest.TestCase):
         frame = guided_frame()
         self.assertIsNone(session.update(frame, 2))
         self.assertEqual(len(session.frames), 0)
-        with patch("autocalibration.choose_settings", return_value=(dict(DEFAULT_SETTINGS), "ready")) as choose:
+        with patch("thai_banknote.autocalibration.choose_settings", return_value=(dict(DEFAULT_SETTINGS), "ready")) as choose:
             for index in range(7):
                 self.assertIsNone(session.update(frame, 3 + index * .3))
             settings = session.update(frame, 5.1)
@@ -64,7 +64,7 @@ class AutoCalibrationTests(unittest.TestCase):
         session = GuidedCalibration()
         session.start(0)
         session.cancel()
-        with patch("autocalibration.choose_settings") as choose:
+        with patch("thai_banknote.autocalibration.choose_settings") as choose:
             self.assertIsNone(session.update(guided_frame(), 10))
             choose.assert_not_called()
 
@@ -83,9 +83,9 @@ class AutoCalibrationTests(unittest.TestCase):
             self.assertEqual(load_settings(path), settings)
 
     def test_browser_loads_saved_values_and_honours_manual_sliders(self):
-        import web_app
+        from thai_banknote import web as web_app
         settings = dict(DEFAULT_SETTINGS, s_min=30, v_min=40)
-        with patch("web_app.load_settings", return_value=settings):
+        with patch.object(web_app, "load_settings", return_value=settings):
             page = web_app.app.test_client().get("/")
             self.assertEqual(page.status_code, 200)
             self.assertIn(b'"s_min": 30', page.data)

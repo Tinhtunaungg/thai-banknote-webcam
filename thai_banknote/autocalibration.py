@@ -3,16 +3,17 @@
 import itertools
 import json
 import math
-from pathlib import Path
 
 import cv2
 import numpy as np
 
-from segmentation import DEFAULT_SETTINGS, segment_banknote
-from preprocessing import camera_warning
+from .paths import ASSETS_DIR, PROJECT_ROOT
+from .preprocessing import camera_warning
+from .segmentation import DEFAULT_SETTINGS, segment_banknote
 
 
-SETTINGS_PATH = Path(__file__).with_name("calibration_settings.json")
+SETTINGS_PATH = PROJECT_ROOT / "calibration_settings.json"
+PACKAGED_SETTINGS_PATH = ASSETS_DIR / "calibration_defaults.json"
 
 
 def guide_box(shape):
@@ -38,8 +39,12 @@ def validate_settings(settings):
 def load_settings(path=SETTINGS_PATH):
     try:
         return validate_settings(json.loads(path.read_text()))
+    except FileNotFoundError:
+        if path == SETTINGS_PATH:
+            return load_settings(PACKAGED_SETTINGS_PATH)
     except (OSError, ValueError, TypeError):
-        return dict(DEFAULT_SETTINGS)
+        pass
+    return dict(DEFAULT_SETTINGS)
 
 
 def save_settings(settings, path=SETTINGS_PATH):

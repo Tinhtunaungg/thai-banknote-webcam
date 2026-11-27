@@ -7,8 +7,8 @@ from unittest.mock import patch
 import cv2
 import numpy as np
 
-from autocalibration import guide_box, load_settings, save_settings
-import web_app
+from thai_banknote.autocalibration import guide_box, load_settings, save_settings
+from thai_banknote import web as web_app
 
 
 def scene():
@@ -30,7 +30,7 @@ class PhoneCalibrationTests(unittest.TestCase):
     def test_success_saves_settings_and_next_detection_uses_them(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "phone.json"
-            with patch("web_app.save_settings", side_effect=lambda s: save_settings(s, path)):
+            with patch.object(web_app, "save_settings", side_effect=lambda s: save_settings(s, path)):
                 response = self.client.post("/auto_calibrate", data=upload_frames(scene()))
             self.assertEqual(response.status_code, 200)
             result = response.get_json()
@@ -38,7 +38,7 @@ class PhoneCalibrationTests(unittest.TestCase):
             self.assertTrue(result["mask"].startswith("data:image/png;base64,"))
             image = scene()
             _, encoded = cv2.imencode(".jpg", image)
-            with patch("web_app.load_settings", return_value=load_settings(path)):
+            with patch.object(web_app, "load_settings", return_value=load_settings(path)):
                 detected = self.client.post("/process_frame", data={
                     "frame": (io.BytesIO(encoded.tobytes()), "note.jpg")})
             self.assertEqual(detected.status_code, 200)
@@ -52,7 +52,7 @@ class PhoneCalibrationTests(unittest.TestCase):
     def test_dark_or_empty_scene_keeps_previous_settings(self):
         for value in (0, 235):
             image = np.full((540, 960, 3), value, np.uint8)
-            with patch("web_app.save_settings") as save:
+            with patch.object(web_app, "save_settings") as save:
                 response = self.client.post("/auto_calibrate", data=upload_frames(image))
                 self.assertEqual(response.status_code, 422)
                 self.assertTrue(response.get_json()["kept_previous_settings"])
@@ -60,7 +60,7 @@ class PhoneCalibrationTests(unittest.TestCase):
                 save.assert_not_called()
 
     def test_save_error_is_reported(self):
-        with patch("web_app.save_settings", side_effect=OSError("test")), \
+        with patch.object(web_app, "save_settings", side_effect=OSError("test")), \
                 patch.object(web_app.app.logger, "exception"):
             response = self.client.post("/auto_calibrate", data=upload_frames(scene()))
         self.assertEqual(response.status_code, 503)

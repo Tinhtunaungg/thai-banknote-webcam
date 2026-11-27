@@ -1,11 +1,12 @@
 import json
-from pathlib import Path
 
 import cv2
 import numpy as np
 
+from .paths import reference_path
 
-SAMPLES_PATH = Path("hist_samples.json")
+
+SAMPLES_PATH = reference_path("hist_samples.json")
 LEARN_KEYS = {
     ord("2"): "20 baht",
     ord("5"): "50 baht",

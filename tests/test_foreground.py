@@ -6,8 +6,8 @@ from unittest.mock import patch
 import cv2
 import numpy as np
 
-from classifier import compute_signature
-from foreground import refine_banknote
+from thai_banknote.classifier import compute_signature
+from thai_banknote.foreground import refine_banknote
 
 
 class ForegroundTests(unittest.TestCase):
@@ -44,7 +44,7 @@ class ForegroundTests(unittest.TestCase):
     def test_missing_crop_and_failed_grabcut_reject(self):
         self.assertFalse(refine_banknote(None)["usable"])
         image = np.full((100, 200, 3), (0, 255, 0), np.uint8)
-        with patch("foreground.cv2.grabCut", side_effect=cv2.error("failure")):
+        with patch("thai_banknote.foreground.cv2.grabCut", side_effect=cv2.error("failure")):
             result = refine_banknote(image)
         self.assertFalse(result["usable"])
         self.assertIsNone(compute_signature(image, mask=result["mask"]))
@@ -58,14 +58,14 @@ class ForegroundTests(unittest.TestCase):
         np.testing.assert_array_equal(result["preview"], image)
 
     def test_browser_endpoint_and_debug_mask(self):
-        import web_app
+        from thai_banknote import web as web_app
 
         image = np.full((300, 640, 3), (60, 160, 60), np.uint8)
         _, jpeg = cv2.imencode(".jpg", image)
         import io
         client = web_app.app.test_client()
-        with patch("web_app.crop_banknote", return_value=(image, None)), \
-                patch("web_app.find_banknote_contours", return_value=[{"test": True}]):
+        with patch.object(web_app, "crop_banknote", return_value=(image, None)), \
+                patch.object(web_app, "find_banknote_contours", return_value=[{"test": True}]):
             response = client.post("/process_frame", data={
                 "frame": (io.BytesIO(jpeg.tobytes()), "frame.jpg"), "include_mask": "1"})
             self.assertEqual(response.status_code, 200)
